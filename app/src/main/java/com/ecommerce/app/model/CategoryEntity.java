@@ -24,7 +24,6 @@ public class CategoryEntity {
     @NotBlank(message = "category description is required")
     private String description;
 
-    @NotBlank
     private String image;
 
     private LocalDateTime createdAt;

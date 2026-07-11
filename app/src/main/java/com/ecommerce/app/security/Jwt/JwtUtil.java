@@ -29,15 +29,15 @@ public class JwtUtil {
 
     // ============ generate token =============
 
-    public String generateToken(String email, Long tenantId) {
+    public String generateToken(String email, Long tenantId, String role) {
         return Jwts.builder()
                 .subject(email)
                 .claim("tenantID", tenantId)
+                .claim("role", role)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + EXPIRATION))
                 .signWith(getSignKey())
                 .compact();
-
     }
 
     // =============== get all extract claims =============
@@ -47,7 +47,7 @@ public class JwtUtil {
                 .build().parseSignedClaims(token).getPayload();
     }
 
-    // ===============  extract tenant =============
+    // =============== extract tenant =============
     public Long extractTenantId(String token) {
         Claims claims = extractAllClaims(token);
         return claims.get("tenantId", Long.class);
@@ -76,5 +76,11 @@ public class JwtUtil {
     public boolean isTokenvalid(String token, UserDetails user) {
         String username = extractUserName(token);
         return username.equals(user.getUsername()) && !isTokenExpired(token);
+    }
+
+    // ============== role extract ====================
+    public String extractRole(String token) {
+        Claims claims = extractAllClaims(token);
+        return claims.get("role", String.class);
     }
 }

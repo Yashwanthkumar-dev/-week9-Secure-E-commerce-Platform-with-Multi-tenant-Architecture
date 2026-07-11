@@ -10,15 +10,18 @@ import com.ecommerce.app.repository.ProductRepository;
 import com.ecommerce.app.repository.TenantRepository;
 import com.ecommerce.app.security.tenant.TenantContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 public class ProductService {
@@ -44,63 +47,65 @@ public class ProductService {
             String description,
             Float price,
             int stock,
-            Long categoryId,
-            MultipartFile image
-    ) throws IOException {
+            // Long categoryId,
+            MultipartFile image) throws IOException {
 
-        System.out.println("===== SERVICE START =====");
-        System.out.println("Image Name : " + image.getOriginalFilename());
-        System.out.println("Image Size : " + image.getSize());
-        System.out.println("Is Empty   : " + image.isEmpty());
-
+        System.out.println("image name :" + image.getOriginalFilename() + " image was passed");
         if (image == null || image.isEmpty()) {
-            return ResponseEntity.badRequest().body("Image is empty");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Image was not found or image was empty");
         }
 
-        CategoryEntity category = catRepo.findById(categoryId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Category not found"));
+        System.out.println("product image folder name passed");
+        String uploadDir = "productImages";
 
-        TenantEntity tenant = tenantRepo.findById(TenantContext.getTenantId())
-                .orElseThrow(() ->
-                        new RuntimeException("Tenant not found"));
-
-        String uploadDir = System.getProperty("user.dir") + "/productUpload";
-
-        File folder = new File(uploadDir);
-
-        if (!folder.exists()) {
-            folder.mkdirs();
+        System.out.println("Folder was created for image");
+        File directoryName = new File(uploadDir);
+        if (!directoryName.exists()) {
+            directoryName.mkdirs();
         }
 
-        String fileName = UUID.randomUUID() + "_" + image.getOriginalFilename();
+        System.out.println("getting image name");
+        String imageName = image.getOriginalFilename();
 
-        File destination = new File(folder, fileName);
+        System.out.println("creating image file path name");
+        Path filePath = Paths.get(uploadDir, imageName);
 
-        image.transferTo(destination);
+        System.out.println("inserting the image into the folder");
+        Files.write(filePath, image.getBytes());
 
-        ProductEntity product = new ProductEntity();
+        System.out.println("image stored ");
 
-        product.setTenant(tenant);
-        product.setName(name);
-        product.setDescription(description);
-        product.setPrice(price);
-        product.setStock(stock);
-        product.setCategory(category);
-        product.setImage(fileName);   // <-- String field
-        product.setCreatedAt(LocalDateTime.now());
+        // CategoryEntity category = catRepo.findById(categoryId)
+        // .orElseThrow(
+        // () -> new ResourceNotFoundException("category was not found"));
 
-        productRepo.save(product);
+        ProductEntity newProduct = new ProductEntity();
 
-        return ResponseEntity.ok(product);
+        newProduct.setName(name);
+        newProduct.setDescription(description);
+        newProduct.setPrice(price);
+        newProduct.setStock(stock);
+        newProduct.setCreatedAt(LocalDateTime.now());
+        // newProduct.setCategory(category);
+        newProduct.setImage(uploadDir + "/" + imageName);
+
+        try {
+            System.out.println("before save");
+            productRepo.save(newProduct);
+            System.out.println("save after");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return ResponseEntity.status(HttpStatus.CREATED).body("product was created");
     }
 
     // ================= GET ALL =================
 
     public ResponseEntity<?> getAllProducts() {
         return ResponseEntity.ok(
-                productRepo.findByTenantId(TenantContext.getTenantId())
-        );
+                productRepo.findByTenantId(TenantContext.getTenantId()));
     }
 
     // ================= GET BY ID =================
@@ -116,8 +121,7 @@ public class ProductService {
             String name,
             String description,
             Float price,
-            int stock
-    ) {
+            int stock) {
 
         ProductEntity product = getIdOrThrow(id);
 
@@ -148,8 +152,7 @@ public class ProductService {
     public ResponseEntity<?> getProductByCategoryId(Long id) {
 
         CategoryEntity category = catRepo.findById(id)
-                .orElseThrow(() ->
-                        new RuntimeException("Category not found"));
+                .orElseThrow(() -> new RuntimeException("Category not found"));
 
         List<ProductResponse> products = category.getProducts()
                 .stream()
@@ -158,8 +161,7 @@ public class ProductService {
                         product.getDescription(),
                         product.getImage(),
                         product.getPrice(),
-                        product.getStock()
-                ))
+                        product.getStock()))
                 .toList();
 
         return ResponseEntity.ok(products);

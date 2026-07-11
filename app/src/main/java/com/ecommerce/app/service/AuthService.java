@@ -40,9 +40,7 @@ public class AuthService {
         }
         TenantEntity tenant = tenantRepo.findById(request.getTenantId()).orElseThrow(
                 () -> new RuntimeException(
-                        "Tenant was not found in this id" + request.getTenantId()
-                )
-        );
+                        "Tenant was not found in this id" + request.getTenantId()));
         UserEntity newUser = new UserEntity();
         newUser.setFirstname(request.getFirstname());
         newUser.setLastname(request.getLastname());
@@ -69,7 +67,8 @@ public class AuthService {
             throw new RuntimeException("Invaild email or password");
         }
         String token = util.generateToken(user.getEmail(),
-                user.getTenant().getId());
+                user.getTenant().getId(),
+                user.getRole().name());
 
         ResponseCookie cookie = ResponseCookie.from("jwt", token)
                 .httpOnly(true)
@@ -82,8 +81,7 @@ public class AuthService {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
                 .body(Map.of(
-                        "message", "Login successfull"
-                ));
+                        "message", "Login successfull"));
     }
 
 }

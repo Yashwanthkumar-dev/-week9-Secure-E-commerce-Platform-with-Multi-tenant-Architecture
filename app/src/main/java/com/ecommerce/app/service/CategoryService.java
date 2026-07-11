@@ -30,14 +30,13 @@ public class CategoryService {
     public CategoryEntity getIdOrThrow(Long id) {
 
         return catRepo.findByIdAndTenantId(id, TenantContext.getTenantId())
-                .orElseThrow(() ->
-                        new RuntimeException("Category not found"));
+                .orElseThrow(() -> new RuntimeException("Category not found"));
     }
-    //    ========== create category ===========
+    // ========== create category ===========
 
     public ResponseEntity<?> createCatergory(String name, String description, MultipartFile image) throws IOException {
 
-//        ====== creating image folder and save in that folder ======
+        // ====== creating image folder and save in that folder ======
 
         String uploaddir = "categoryUpload";
 
@@ -52,8 +51,9 @@ public class CategoryService {
         Path filePath = Paths.get(uploaddir, imageName);
 
         Files.write(filePath, image.getBytes());
-
-//        ======= creating category ======
+        System.out.println("image was stored");
+        System.out.println("image name " + imageName);
+        // ======= creating category ======
         CategoryEntity newCategory = new CategoryEntity();
         TenantEntity tenant = tenantRepo.findById(TenantContext.getTenantId())
                 .orElseThrow(() -> new RuntimeException("Tenant not found"));
@@ -63,22 +63,24 @@ public class CategoryService {
         newCategory.setDescription(description);
         newCategory.setImage(imageName);
         newCategory.setCreatedAt(LocalDateTime.now());
-
-        catRepo.save(newCategory);
-
+        try {
+            System.out.println("before save");
+            catRepo.save(newCategory);
+            System.out.println("after save");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return ResponseEntity.ok("category was created");
     }
 
-
-    //     ============ get all categories ============
+    // ============ get all categories ============
 
     public ResponseEntity<?> getAllcategories() {
         List<CategoryEntity> categories = catRepo.findByTenantId(TenantContext.getTenantId());
         return ResponseEntity.ok(categories);
     }
 
-
-    // =========== get  category by id ==============
+    // =========== get category by id ==============
 
     public ResponseEntity<?> getCategoryById(Long id) {
         CategoryEntity Category = getIdOrThrow(id);
@@ -86,7 +88,7 @@ public class CategoryService {
 
     }
 
-    //    ================== update category by id ========
+    // ================== update category by id ========
 
     public ResponseEntity<?> updateCategoryById(Long id, CategoryEntity cat) {
         CategoryEntity Category = getIdOrThrow(id);
@@ -99,7 +101,7 @@ public class CategoryService {
 
     }
 
-    //    ================== delete category by id ========
+    // ================== delete category by id ========
 
     public ResponseEntity<?> deleteCategoryById(Long id) {
 

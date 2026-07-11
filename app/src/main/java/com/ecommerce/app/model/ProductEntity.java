@@ -23,8 +23,7 @@ public class ProductEntity {
     private String description;
     @NotBlank(message = " product image was important ")
     private String image;
-    @NotBlank(message = "product price was important ")
-    private float price;
+    private Float price;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
